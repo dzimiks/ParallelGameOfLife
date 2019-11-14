@@ -13,7 +13,7 @@ def random_grid(n):
     Returns a grid of NxN random values.
 
     :param n: Size of the grid.
-    :return: A grid of NxN random values
+    :return: A grid of NxN random values.
     """
     return np.random.choice(values, n * n).reshape(n, n)
 
@@ -55,6 +55,10 @@ def update(frame_number, img, grid, n):
 
 
 def play_game():
+    """
+    Simulates Conway's Game of Life.
+    """
+
     # Grid size
     N = 50
     FRAMES = 10
@@ -67,20 +71,20 @@ def play_game():
         for j in range(N):
             # 3x3 Matrix of 8 neighbours of the current cell
             matrix = [[
-                ((i - 1) % N, (j - 1) % N),
-                ((i - 1) % N, j),
-                ((i - 1) % N, (j + 1) % N)
+                ((i - 1) % N, (j - 1) % N),  # upper left
+                ((i - 1) % N, j),  # upper
+                ((i - 1) % N, (j + 1) % N)  # upper right
             ], [
-                (i, (j - 1) % N),
-                (i, j),
-                (i, (j + 1) % N)
+                (i, (j - 1) % N),  # left
+                (i, j),  # center
+                (i, (j + 1) % N)  # right
             ], [
-                ((i + 1) % N, (j - 1) % N),
-                ((i + 1) % N, j),
-                ((i + 1) % N, (j + 1) % N)
+                ((i + 1) % N, (j - 1) % N),  # lower left
+                ((i + 1) % N, j),  # lower
+                ((i + 1) % N, (j + 1) % N)  # lower right
             ]]
 
-            print('\nMatrix for ({},{}):'.format(i, j))
+            print('\nMatrix for ({}, {}):'.format(i, j))
 
             for k in range(3):
                 for v in range(3):
