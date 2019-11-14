@@ -97,7 +97,7 @@ class Celija(Thread):
             self.update(total / 255)
 
             numOfCellsFinished.acquire()
-            if cellsFinished == N*N:
+            if cellsFinished == N * N:
                 # print("skrt")
                 cellsFinished = 0
                 numOfCellsFinished.notifyAll()
@@ -106,6 +106,7 @@ class Celija(Thread):
             else:
                 numOfCellsFinished.wait()
                 numOfCellsFinished.release()
+
 
 threads = []
 # Starting threads

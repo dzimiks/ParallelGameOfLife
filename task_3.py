@@ -18,14 +18,3 @@
 # TODO: susedima upise vrednost
 # TODO: globalni brojac ipak na kraju!!!!!
 # TODO: =============================================
-
-# TODO: Task 4
-# TODO: =============================================
-# TODO: recimo imam 5x5 matricu i pravim 5 procesa za svaki red u matrici
-# TODO: glavni program spawnuje procese koji rade analizu rada
-# TODO: glavni program ima celu matricu i dace procesu sve potrebne vrednosti svih suseda
-# TODO: funkcija je zapravo podproces koja ce da vrati nazad glavnom programu
-# TODO: Process Pool -> map()
-# TODO: damo matricu i on nam vrati nazad
-# TODO: funkc koju prosledim poolu da vrati i, j i novu vrednost
-# TODO: =============================================

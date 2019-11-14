@@ -14,10 +14,10 @@ vals = [ON, OFF]
 
 # randomGrid
 grid = np.random.choice(vals, N * N, p=[0.2, 0.8]).reshape(N, N)
-# matrix used for saving iterarions of grid
+# matrix used for saving iterations of grid
 listaMatrica = []
 
-#drawing generated grid
+# drawing generated grid
 plt.imshow(grid, interpolation='nearest')
 plt.show()
 
@@ -231,7 +231,6 @@ class Celija(Thread):
                 nextIteration.notifyAll()
                 nextIteration.release()
                 print("Crtam grid", self.currentIteration, o)
-
                 listaMatrica.append(grid.copy())
 
             else:
