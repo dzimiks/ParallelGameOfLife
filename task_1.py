@@ -5,19 +5,14 @@ from threading import Thread
 import random
 import time
 
-import matplotlib.animation as animation
-
 N = 20
 ON = 255
 OFF = 0
 vals = [ON, OFF]
-
 # randomGrid
 grid = np.random.choice(vals, N * N, p=[0.2, 0.8]).reshape(N, N)
-# matrix used for saving iterations of grid
 listaMatrica = []
 
-# drawing generated grid
 plt.imshow(grid, interpolation='nearest')
 plt.show()
 
@@ -199,22 +194,19 @@ class Celija(Thread):
 
                 # print("Celija "+str(self.row)+str(self.column))
                 accessListiBrojaca.acquire()
-                flag = False
-                for i in range(0, 8):
-                    # print(self.listaBrojacaSuseda[i])
-                    if (self.listaBrojacaSuseda[i] == 1):
-                        flag = True
-                    else:
-                        flag = False
-                if flag == True:
+                if self.listaBrojacaSuseda[0] == 1 and \
+                        self.listaBrojacaSuseda[1] == 1 and \
+                        self.listaBrojacaSuseda[2] == 1 and \
+                        self.listaBrojacaSuseda[3] == 1 and \
+                        self.listaBrojacaSuseda[4] == 1 and \
+                        self.listaBrojacaSuseda[5] == 1 and \
+                        self.listaBrojacaSuseda[6] == 1 and \
+                        self.listaBrojacaSuseda[7] == 1:
                     for i in range(0, 8):
-                        # print("Vracam listu na pocetno stanje")
                         self.listaBrojacaSuseda[i] = 0
                     accessListiBrojaca.release()
                     break
                 accessListiBrojaca.release()
-
-            # print("Brojac za semafor: " + str(self.brojacZaSemafor))
 
             timeOfSleep = random.random()
             # print("Vreme spavanja :" + str(timeOfSleep))
@@ -231,6 +223,7 @@ class Celija(Thread):
                 nextIteration.notifyAll()
                 nextIteration.release()
                 print("Crtam grid", self.currentIteration, o)
+
                 listaMatrica.append(grid.copy())
 
             else:
