@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing
 from multiprocessing import Process, Value
+import random
+import time
 
 # todo da li mogu da procitam prvo stanje iz matrice? - moze
 # todo svaka celija ima svoj queue za poruke
@@ -12,7 +14,7 @@ from multiprocessing import Process, Value
 # todo da li je dozvoljeno upisati stanje u matricu kad zavrsim update?
 
 
-N = 5
+N = 20
 ON = 255
 OFF = 0
 vals = [ON, OFF]
@@ -68,9 +70,9 @@ class Celija(Process):
                 self.state = self.valueOn
 
 
-        with self.cellsFinished.get_lock():
-            # print("Cell finished ",cellsFinished.value)
-            self.cellsFinished.value += 1
+        # with self.cellsFinished.get_lock():
+        #     # print("Cell finished ",cellsFinished.value)
+        #     self.cellsFinished.value += 1
 
         self.currentIteration += 1
         cellInfo = (self.row, self.column, self.currentIteration, self.state)
@@ -88,32 +90,39 @@ class Celija(Process):
             for i in range(0, 8):
                 total += self.matrixQueueCell[self.row][self.column].get()
 
+            # timeOfSleep = random.random()
+            # time.sleep(timeOfSleep)
             # print("Total",total // 255)
             self.update(total // 255)
             self.numOfCellsFinished.acquire()
 
-            if self.cellsFinished.value == self.gridSize * self.gridSize:
-                with self.cellsFinished.get_lock():
-                    self.cellsFinished.value = 0
-                # print("clear cells finished:", cellsFinished.value)
-                    self.numOfCellsFinished.notify_all()
+            self.cellsFinished.get_lock().acquire()
+            # print("Cell finished ",cellsFinished.value)
+            self.cellsFinished.value += 1
 
+            if self.cellsFinished.value == self.gridSize * self.gridSize:
+                self.cellsFinished.value = 0
+                self.cellsFinished.get_lock().release()
+                print("clear cells finished:", cellsFinished.value,self.currentIteration)
+                self.numOfCellsFinished.notify_all()
                 self.numOfCellsFinished.release()
             else:
-                print("Celija", self.row, self.column, "ceka")
+                self.cellsFinished.get_lock().release()
+                # print("Celija", self.row, self.column, "ceka")
                 self.numOfCellsFinished.wait()
+                # print("Celija", self.row, self.column, "izasao")
                 self.numOfCellsFinished.release()
 
 
 class ServiceProces(Process):
-    def __init__(self, grid, gridSize, serviceQueue):
+    def __init__(self, grid, gridSize, serviceQueue,listaMatrica):
         super().__init__()
         self.grid = grid
         self.gridSize = gridSize
         self.serviceQueue = serviceQueue
+        self.listaMatrica = listaMatrica
 
     def run(self):
-        listaMatrica = []
 
         for i in range(0,5):
 
@@ -122,11 +131,12 @@ class ServiceProces(Process):
                 # print(i, '- Cells info:', cellsInfo)
                 self.grid[cellsInfo[0]][cellsInfo[1]] = cellsInfo[3]
 
-            listaMatrica.append(self.grid.copy())
+            self.listaMatrica.append(self.grid.copy())
 
         for g in listaMatrica:
             plt.imshow(g, interpolation='nearest')
             plt.show()
+
 
 
 serviceQueue = multiprocessing.Queue()
@@ -135,9 +145,9 @@ serviceQueue = multiprocessing.Queue()
 
 matrixQueueCell = [[multiprocessing.Queue() for i in range(N)] for j in range(N)]
 
-listaCelija = []
+listaMatrica= []
 
-serviceProcess = ServiceProces(grid, N, serviceQueue)
+serviceProcess = ServiceProces(grid, N, serviceQueue,listaMatrica)
 serviceProcess.start()
 
 # Starting threads
@@ -158,9 +168,9 @@ for t in process:
 
 serviceProcess.join()
 
-# for g in listaMatrica:
-#     plt.imshow(g, interpolation='nearest')
-#     plt.show()
+for g in listaMatrica:
+    plt.imshow(g, interpolation='nearest')
+    plt.show()
 
 # todo queue-ve,lock,condition,broj itracija,velicina matrice,
 # todo pracenje koliko je celija zavrsilo, za to koristiti value
