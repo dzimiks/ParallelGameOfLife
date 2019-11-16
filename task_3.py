@@ -3,7 +3,16 @@ import matplotlib.pyplot as plt
 import multiprocessing
 from multiprocessing import Process, Value
 
-N = 4
+# todo da li mogu da procitam prvo stanje iz matrice? - moze
+# todo svaka celija ima svoj queue za poruke
+# todo susedima javljam svoje stanje(nije blokirajuce)
+# todo celija je blokirana nad queue-om dok svaka celija ne javi stanje(8 puta radim wait nad queue)
+# todo svaka celija ceka da joj svi susedi kazu svoja stanja
+# todo prodjem kroz queue i update svoje stanje na osnovu njih
+# todo da li je dozvoljeno upisati stanje u matricu kad zavrsim update?
+
+
+N = 5
 ON = 255
 OFF = 0
 vals = [ON, OFF]
@@ -18,7 +27,7 @@ numOfCellsFinished = multiprocessing.Condition()
 
 
 class Celija(Process):
-    def __init__(self, row, column, state, gridSize, serviceQueue, matrixQueueCell, numOfCellsFinished):
+    def __init__(self, row, column, state, gridSize, serviceQueue, matrixQueueCell, numOfCellsFinished,cellsFinished,valueOn,valueOff):
         super().__init__()
         self.currentIteration = 0
         self.row = row
@@ -28,38 +37,40 @@ class Celija(Process):
         self.serviceQueue = serviceQueue
         self.matrixQueueCell = matrixQueueCell
         self.numOfCellsFinished = numOfCellsFinished
+        self.cellsFinished = cellsFinished
+        self.valueOn = valueOn
+        self.valueOff = valueOff
 
     def signalNeighbors(self):
 
-        matrixQueueCell[self.row][(self.column - 1) % self.gridSize].put(self.state)
+        self.matrixQueueCell[self.row][(self.column - 1) % self.gridSize].put(self.state)
 
-        matrixQueueCell[self.row][(self.column + 1) % self.gridSize].put(self.state)
+        self.matrixQueueCell[self.row][(self.column + 1) % self.gridSize].put(self.state)
 
-        matrixQueueCell[(self.row - 1) % self.gridSize][self.column].put(self.state)
+        self.matrixQueueCell[(self.row - 1) % self.gridSize][self.column].put(self.state)
 
-        matrixQueueCell[(self.row + 1) % self.gridSize][self.column].put(self.state)
+        self.matrixQueueCell[(self.row + 1) % self.gridSize][self.column].put(self.state)
 
-        matrixQueueCell[(self.row - 1) % self.gridSize][(self.column - 1) % self.gridSize].put(self.state)
+        self.matrixQueueCell[(self.row - 1) % self.gridSize][(self.column - 1) % self.gridSize].put(self.state)
 
-        matrixQueueCell[(self.row - 1) % self.gridSize][(self.column + 1) % self.gridSize].put(self.state)
+        self.matrixQueueCell[(self.row - 1) % self.gridSize][(self.column + 1) % self.gridSize].put(self.state)
 
-        matrixQueueCell[(self.row + 1) % self.gridSize][(self.column - 1) % self.gridSize].put(self.state)
+        self.matrixQueueCell[(self.row + 1) % self.gridSize][(self.column - 1) % self.gridSize].put(self.state)
 
-        matrixQueueCell[(self.row + 1) % self.gridSize][(self.column + 1) % self.gridSize].put(self.state)
+        self.matrixQueueCell[(self.row + 1) % self.gridSize][(self.column + 1) % self.gridSize].put(self.state)
 
     def update(self, total):
-        if self.state == ON:
+        if self.state == self.valueOn:
             if (total < 2) or (total > 3):
-                self.state = OFF
-                grid[self.row, self.column] = OFF
+                self.state = self.valueOff
         else:
             if total == 3:
-                self.state = ON
-                grid[self.row, self.column] = ON
+                self.state = self.valueOn
 
-        with cellsFinished.get_lock():
+
+        with self.cellsFinished.get_lock():
             # print("Cell finished ",cellsFinished.value)
-            cellsFinished.value += 1
+            self.cellsFinished.value += 1
 
         self.currentIteration += 1
         cellInfo = (self.row, self.column, self.currentIteration, self.state)
@@ -68,29 +79,30 @@ class Celija(Process):
         # todo spakuj koordinate, broj iteracije i novo stanje u tuple i onda odradi put u queue
 
     def run(self):
-        self.signalNeighbors()
-        total = 0
 
-        for i in range(0, 8):
-            total += self.matrixQueueCell[self.row][self.column].get()
+        for i in range(0,5):
 
-        # print("Total",total // 255)
-        self.update(total // 255)
-        self.numOfCellsFinished.acquire()
+            self.signalNeighbors()
+            total = 0
 
-        if cellsFinished.value == self.gridSize * self.gridSize:
-            with cellsFinished.get_lock():
-                cellsFinished.value = 0
-            print("clear cells finished:", cellsFinished.value)
+            for i in range(0, 8):
+                total += self.matrixQueueCell[self.row][self.column].get()
 
-            with self.numOfCellsFinished:
-                self.numOfCellsFinished.notify_all()
+            # print("Total",total // 255)
+            self.update(total // 255)
+            self.numOfCellsFinished.acquire()
 
-            self.numOfCellsFinished.release()
-        else:
-            print("Celija", self.row, self.column, "ceka")
-            self.numOfCellsFinished.wait()
-            self.numOfCellsFinished.release()
+            if self.cellsFinished.value == self.gridSize * self.gridSize:
+                with self.cellsFinished.get_lock():
+                    self.cellsFinished.value = 0
+                # print("clear cells finished:", cellsFinished.value)
+                    self.numOfCellsFinished.notify_all()
+
+                self.numOfCellsFinished.release()
+            else:
+                print("Celija", self.row, self.column, "ceka")
+                self.numOfCellsFinished.wait()
+                self.numOfCellsFinished.release()
 
 
 class ServiceProces(Process):
@@ -103,12 +115,14 @@ class ServiceProces(Process):
     def run(self):
         listaMatrica = []
 
-        for i in range(0, self.gridSize * self.gridSize):
-            cellsInfo = self.serviceQueue.get()
-            print(i, '- Cells info:', cellsInfo)
-            grid[cellsInfo[0]][cellsInfo[1]] = cellsInfo[3]
+        for i in range(0,5):
 
-        listaMatrica.append(grid.copy())
+            for i in range(0, self.gridSize * self.gridSize):
+                cellsInfo = self.serviceQueue.get()
+                # print(i, '- Cells info:', cellsInfo)
+                self.grid[cellsInfo[0]][cellsInfo[1]] = cellsInfo[3]
+
+            listaMatrica.append(self.grid.copy())
 
         for g in listaMatrica:
             plt.imshow(g, interpolation='nearest')
@@ -116,6 +130,8 @@ class ServiceProces(Process):
 
 
 serviceQueue = multiprocessing.Queue()
+
+
 
 matrixQueueCell = [[multiprocessing.Queue() for i in range(N)] for j in range(N)]
 
@@ -129,7 +145,7 @@ serviceProcess.start()
 #     for j in range(0, N):
 # print("Starting thread: " + i.__str__() + j.__str__())
 # process = Celija(i, j, grid[i][j], N, serviceQueue, matrixQueueCell, numOfCellsFinished, lock)
-process = [[Celija(i, j, grid[i][j], N, serviceQueue, matrixQueueCell, numOfCellsFinished) for i in range(N)] for j in
+process = [[Celija(i, j, grid[i][j], N, serviceQueue, matrixQueueCell, numOfCellsFinished, cellsFinished,ON,OFF) for i in range(N)] for j in
            range(N)]
 
 for t in process:
