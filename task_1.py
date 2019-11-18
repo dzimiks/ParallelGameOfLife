@@ -8,8 +8,8 @@ import time
 N = 20
 ON = 255
 OFF = 0
-vals = [ON, OFF]
-# randomGrid
+vals = [ON,OFF]
+#randomGrid
 grid = np.random.choice(vals, N * N, p=[0.2, 0.8]).reshape(N, N)
 listaMatrica = []
 
@@ -20,7 +20,6 @@ cellsFinished = 0
 numOfCellsFinished = threading.Lock()
 accessListiBrojaca = threading.Lock()
 nextIteration = threading.Condition()
-
 
 class Celija(Thread):
 
@@ -44,12 +43,12 @@ class Celija(Thread):
                 total += grid[self.row, (self.column - 1) % N]
 
                 # zakljucava pristup listi brojaca suseda kako bi promenio vrednost
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if t.row == self.row and t.column == (self.column - 1) % N:
                         t.listaBrojacaSuseda[i] += 1
                         # TODO proveri koja je vrednost u listi nakon ovoga
-                        accessListiBrojaca.release()
+
 
                     # print("Uvecam brojac za levi sused")
 
@@ -61,11 +60,11 @@ class Celija(Thread):
                 # posecen od strane levog
                 total += grid[self.row, (self.column + 1) % N]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if t.row == self.row and t.column == (self.column + 1) % N:
                         t.listaBrojacaSuseda[i] += 1
-                        accessListiBrojaca.release()
+
                     # print("Uvecam brojac za desni sused")
 
                     t.semaphore.release()
@@ -76,14 +75,15 @@ class Celija(Thread):
                 # posecen od strane donjeg
                 total += grid[(self.row - 1) % N, self.column]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if (t.row == (self.row - 1) % N and t.column == self.column):
                         t.listaBrojacaSuseda[i] += 1
-                        accessListiBrojaca.release()
+
                     # print("Uvecam brojac za gornji sused")
 
                     t.semaphore.release()
+
 
             if (i == 3):
                 # 4
@@ -91,13 +91,14 @@ class Celija(Thread):
                 # posecen od strane gornjeg
                 total += grid[(self.row + 1) % N, self.column]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if (t.row == (self.row + 1) % N and t.column == self.column):
                         t.listaBrojacaSuseda[i] += 1
-                        # print("Uvecam brojac za donji sused")
-                        accessListiBrojaca.release()
+                    # print("Uvecam brojac za donji sused")
+
                     t.semaphore.release()
+
 
             if (i == 4):
                 # 5
@@ -105,14 +106,15 @@ class Celija(Thread):
                 # posecen od stranje donjeg desnog
                 total += grid[(self.row - 1) % N, (self.column - 1) % N]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if (t.row == (self.row - 1) % N and t.column == (self.column - 1) % N):
                         t.listaBrojacaSuseda[i] += 1
-                        accessListiBrojaca.release()
+
                     # print("Uvecam brojac za gornji levi sused")
 
                     t.semaphore.release()
+
 
             if (i == 5):
                 # 6
@@ -120,13 +122,14 @@ class Celija(Thread):
                 # posecen od strane donjeg levog
                 total += grid[(self.row - 1) % N, (self.column + 1) % N]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if (t.row == (self.row - 1) % N and t.column == (self.column + 1) % N):
                         t.listaBrojacaSuseda[i] += 1
-                        # print("Uvecam brojac za gornji desni sused")
-                        accessListiBrojaca.release()
+                    # print("Uvecam brojac za gornji desni sused")
+
                     t.semaphore.release()
+
 
             if (i == 6):
                 # 7
@@ -134,13 +137,14 @@ class Celija(Thread):
                 # posecen od strane gornjeg desnog
                 total += grid[(self.row + 1) % N, (self.column - 1) % N]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if (t.row == (self.row + 1) % N and t.column == (self.column - 1) % N):
                         t.listaBrojacaSuseda[i] += 1
-                        # print("Uvecam brojac za donji levi sused")
-                        accessListiBrojaca.release()
+                    # print("Uvecam brojac za donji levi sused")
+
                     t.semaphore.release()
+
 
             if (i == 7):
                 # 8
@@ -148,12 +152,12 @@ class Celija(Thread):
                 # posecen od strane gornjeg levog
                 total += grid[(self.row + 1) % N, (self.column + 1) % N]
 
-                accessListiBrojaca.acquire()
+
                 for t in threads:
                     if (t.row == (self.row + 1) % N and t.column == (self.column + 1) % N):
                         t.listaBrojacaSuseda[i] += 1
-                        # print("Uvecam brojac za donji desni sused")
-                        accessListiBrojaca.release()
+                    # print("Uvecam brojac za donji desni sused")
+
                     t.semaphore.release()
 
         return total / 255
@@ -182,7 +186,7 @@ class Celija(Thread):
     def run(self):
         global cellsFinished
         # TODO read value from neighbors
-        for o in range(0, 5):
+        for o in range(0,5):
             total = self.checkNeighbors()
 
             # print("Total " + str(self.row) + " " + str(self.column) + " : " + str(total))
@@ -194,15 +198,8 @@ class Celija(Thread):
 
                 # print("Celija "+str(self.row)+str(self.column))
                 accessListiBrojaca.acquire()
-                if self.listaBrojacaSuseda[0] == 1 and \
-                        self.listaBrojacaSuseda[1] == 1 and \
-                        self.listaBrojacaSuseda[2] == 1 and \
-                        self.listaBrojacaSuseda[3] == 1 and \
-                        self.listaBrojacaSuseda[4] == 1 and \
-                        self.listaBrojacaSuseda[5] == 1 and \
-                        self.listaBrojacaSuseda[6] == 1 and \
-                        self.listaBrojacaSuseda[7] == 1:
-                    for i in range(0, 8):
+                if self.listaBrojacaSuseda[0] == 1 and self.listaBrojacaSuseda[1] == 1 and self.listaBrojacaSuseda[1] == 1 and self.listaBrojacaSuseda[3] == 1 and self.listaBrojacaSuseda[4] == 1  and self.listaBrojacaSuseda[5] == 1 and self.listaBrojacaSuseda[6] == 1 and self.listaBrojacaSuseda[7] == 1:
+                    for i in range(0,8):
                         self.listaBrojacaSuseda[i] = 0
                     accessListiBrojaca.release()
                     break
@@ -214,7 +211,7 @@ class Celija(Thread):
             # TODO write value based on neighbors
             self.update(total)
             numOfCellsFinished.acquire()
-            if (cellsFinished == N * N):
+            if(cellsFinished == N*N):
                 # print("Celija " + str(self.row) + str(self.column)+" radi notifyAll")
                 # print("RADIM NotifyAll")
                 cellsFinished = 0
@@ -222,7 +219,7 @@ class Celija(Thread):
                 nextIteration.acquire()
                 nextIteration.notifyAll()
                 nextIteration.release()
-                print("Crtam grid", self.currentIteration, o)
+                print("Crtam grid",self.currentIteration,o)
 
                 listaMatrica.append(grid.copy())
 
@@ -231,6 +228,8 @@ class Celija(Thread):
                 nextIteration.acquire()
                 nextIteration.wait()
                 nextIteration.release()
+
+
 
 
 threads = []
